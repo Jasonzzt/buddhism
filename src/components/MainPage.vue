@@ -133,13 +133,13 @@ const navigateToBuddhismPage = () => {
   }
   
   .title-section {
-    bottom: 5vh;
+    bottom: 15vh;
     left: 3vw;
   }
   
   .main-title, .subtitle {
-    font-size: 11vw;
-    line-height: 0.9;
+    font-size: 8vw;
+    line-height: 1.2;
   }
   
   .date {
@@ -176,13 +176,13 @@ const navigateToBuddhismPage = () => {
   }
   
   .title-section {
-    bottom: 4vh;
-    left: 1vw;
+    bottom: 20vh;
+    left: 5vw;
   }
   
   .main-title, .subtitle {
-    font-size: 12vw;
-    line-height: 0.85;
+    font-size: 9vw;
+    line-height: 1.2;
   }
 }
 </style> 
