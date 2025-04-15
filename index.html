@@ -8,12 +8,27 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="format-detection" content="telephone=no">
     <meta name="color-scheme" content="light">
-    <meta name="theme-color" content="#f5f2ee">
+    <meta name="theme-color" content="#f5f2ee" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
     <title>Buddhism Wisdom</title>
     <style>
       @media (prefers-color-scheme: dark) {
         body {
           background-color: #f5f2ee !important;
+          color: #000000 !important;
+        }
+        
+        .main-container:not(.buddhism-page) {
+          background-color: #000000 !important;
+        }
+        
+        .date, .foundation, .main-title, .subtitle {
+          color: white !important;
+        }
+        
+        .buddhism-page .main-title, 
+        .buddhism-page .instruction-text, 
+        .buddhism-page .back-button {
           color: #000000 !important;
         }
       }

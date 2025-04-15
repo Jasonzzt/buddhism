@@ -38,7 +38,7 @@ const navigateToBuddhismPage = () => {
 .main-container {
   min-height: 100vh;
   height: 100%;
-  background-color: #000000;
+  background-color: #000000 !important;
   width: 100vw;
   max-width: 100%;
   -webkit-tap-highlight-color: transparent;
@@ -48,7 +48,7 @@ const navigateToBuddhismPage = () => {
   right: 0;
   bottom: 0;
   overflow: hidden;
-  color: white;
+  color: white !important;
   cursor: pointer;
 }
 
@@ -76,6 +76,7 @@ const navigateToBuddhismPage = () => {
   margin: 0 0 0.2em 0;
   padding: 0;
   letter-spacing: 1px;
+  color: white !important;
 }
 
 .foundation {
@@ -84,6 +85,7 @@ const navigateToBuddhismPage = () => {
   margin: 0;
   padding: 0;
   letter-spacing: 1px;
+  color: white !important;
 }
 
 .title-section {
@@ -100,6 +102,7 @@ const navigateToBuddhismPage = () => {
   margin: 0;
   padding: 0;
   font-family: 'Noto Sans SC', sans-serif;
+  color: white !important;
 }
 
 /* Responsive design for different screen sizes */

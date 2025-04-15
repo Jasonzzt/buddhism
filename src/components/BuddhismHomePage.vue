@@ -13,7 +13,7 @@ const goToRecognition = () => {
 </script>
 
 <template>
-  <div class="main-container">
+  <div class="main-container buddhism-page">
     <div class="back-button" @click="goBack">
       <span>←</span>
     </div>
