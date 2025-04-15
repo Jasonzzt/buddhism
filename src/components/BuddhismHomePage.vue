@@ -33,7 +33,8 @@ const goToRecognition = () => {
 .main-container {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  padding-top: 15vh;
   min-height: 100vh;
   height: 100%;
   background-color: #f5f2ee;
@@ -52,11 +53,12 @@ const goToRecognition = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   text-align: center;
   padding: 1rem;
   width: 100%;
   max-width: 90%;
+  margin-top: 0;
 }
 
 .main-title {
@@ -112,14 +114,25 @@ const goToRecognition = () => {
 @media (max-width: 480px) {
   .main-container {
     padding: 0;
+    padding-top: 10vh;
+    align-items: flex-start;
   }
   
   .content-wrapper {
     padding: 1rem;
+    margin-top: 0;
   }
 }
 
 @media (max-height: 600px) {
+  .main-container {
+    padding-top: 5vh;
+  }
+  
+  .content-wrapper {
+    margin-top: 0;
+  }
+  
   .main-title {
     margin-bottom: 1.5rem;
   }
