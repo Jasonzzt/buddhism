@@ -68,7 +68,7 @@ const goToRecognition = () => {
   word-wrap: break-word;
   overflow-wrap: break-word;
   line-height: 1.4;
-  color: var(--text-color, rgba(0, 0, 0, 0.9));
+  color: rgba(0, 0, 0, 0.9);
   text-shadow: 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
@@ -95,7 +95,7 @@ const goToRecognition = () => {
   overflow-wrap: break-word;
   line-height: 1.4;
   font-weight: 500;
-  color: var(--text-color, rgba(0, 0, 0, 0.9));
+  color: rgba(0, 0, 0, 0.9);
 }
 
 /* Responsive design for different screen sizes */
@@ -159,26 +159,5 @@ const goToRecognition = () => {
   z-index: 10;
   cursor: pointer;
   color: #333;
-}
-
-/* 添加媒体查询以检测夜览模式 */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text-color: rgba(255, 255, 255, 0.9);
-  }
-  
-  .main-container {
-    background-color: #1a1a1a; /* 夜览模式下的背景色 */
-  }
-  
-  .back-button {
-    color: #ffffff;
-  }
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    --text-color: rgba(0, 0, 0, 0.9);
-  }
 }
 </style> 
