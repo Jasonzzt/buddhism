@@ -81,9 +81,9 @@ const checkRecognition = async () => {
   try {
     // 将当前视频帧绘制到canvas
     const context = canvasRef.value.getContext('2d');
-    canvasRef.value.width = videoRef.value.videoWidth;
-    canvasRef.value.height = videoRef.value.videoHeight;
-    context.drawImage(videoRef.value, 0, 0, canvasRef.value.width, canvasRef.value.height);
+    canvasRef.value.width = 640; // 设置canvas宽度为640
+    canvasRef.value.height = 640; // 设置canvas高度为640
+    context.drawImage(videoRef.value, 0, 0, canvasRef.value.width, canvasRef.value.height); // 使用drawImage方法进行图像缩放
     
     // 将canvas转换为blob
     const blob = await new Promise(resolve => {
