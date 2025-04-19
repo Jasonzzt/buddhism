@@ -12,11 +12,11 @@ const router = createRouter({
       name: 'home',
       component: MainPage
     },
-    {
-      path: '/buddhism',
-      name: 'buddhism',
-      component: BuddhismHomePage
-    },
+    // {
+    //   path: '/buddhism',
+    //   name: 'buddhism',
+    //   component: BuddhismHomePage
+    // },
     {
       path: '/recognition',
       name: 'recognition',

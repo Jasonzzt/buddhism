@@ -1,36 +1,54 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { recognitionService } from '../services/api';
 
 const router = useRouter();
-const countdown = ref(30);
-const recognitionSuccess = ref(false);
-const recognitionFailed = ref(false);
+const countdown = ref(12);
+const recognitionStatus = ref('checking'); // 'checking', 'success', 'failed'
+const videoRef = ref(null);
+const videoDisplayEl = ref(null);
+const canvasRef = ref(null);
+const stream = ref(null);
+// 默认不显示摄像头
+const videoDisplay = ref(false);
 let timer = null;
+let recognitionTimer = null;
+const recognitionInterval = 1000 / 30; // 30fps
 
-// 模拟识别过程，实际应用中可替换为真实的识别逻辑
-const simulateRecognition = () => {
-  // 随机模拟识别成功或失败
-  // 在实际应用中，这里应该替换为真实的手势识别逻辑
-  const result = Math.random() > 0.3; // 70%概率成功
-  
-  if (result) {
-    recognitionSuccess.value = true;
-    // 识别成功后延迟2秒跳转到下一页
-    setTimeout(() => {
-      router.push('/message');
-    }, 2000);
-  } else {
-    recognitionFailed.value = true;
-    // 识别失败后3秒重置状态，重新开始识别
-    setTimeout(() => {
-      recognitionFailed.value = false;
-      countdown.value = 30;
-      startCountdown();
-    }, 3000);
+// 启动摄像头
+const startCamera = async () => {
+  try {
+    // 请求访问用户的摄像头
+    stream.value = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user' }
+    });
+    
+    // 设置视频源为摄像头流
+    if (videoRef.value) {
+      videoRef.value.srcObject = stream.value;
+    }
+    
+    // 只有当videoDisplay为true且元素存在时，才设置显示用的视频元素
+    if (videoDisplay.value && videoDisplayEl.value) {
+      videoDisplayEl.value.srcObject = stream.value;
+    }
+    
+    return true;
+  } catch (err) {
+    console.error('Error accessing camera:', err);
+    return false;
   }
 };
 
+// 停止摄像头流
+const stopCamera = () => {
+  if (stream.value) {
+    stream.value.getTracks().forEach(track => track.stop());
+  }
+};
+
+// 开始倒计时
 const startCountdown = () => {
   // 清除可能存在的旧计时器
   if (timer) {
@@ -40,52 +58,129 @@ const startCountdown = () => {
   timer = setInterval(() => {
     countdown.value--;
     
-    // 当倒计时到25秒时显示失败
-    if (countdown.value === 25) {
-      recognitionFailed.value = true;
-    }
-    
-    // 当倒计时到20秒时显示成功并准备跳转
-    if (countdown.value === 20) {
+    if (countdown.value <= 0) {
       clearInterval(timer);
-      recognitionFailed.value = false;
-      recognitionSuccess.value = true;
-      
-      // 识别成功后延迟2秒跳转到下一页
-      setTimeout(() => {
-        router.push('/message');
-      }, 2000);
+      // 如果倒计时结束且状态仍为checking，则认为识别成功
+      if (recognitionStatus.value === 'checking') {
+        recognitionStatus.value = 'success';
+        stopRecognition();
+        
+        // 识别成功后延迟2秒跳转到消息页
+        setTimeout(() => {
+          router.push('/message');
+        }, 2000);
+      }
     }
   }, 1000);
 };
 
+// 发送识别请求
+const checkRecognition = async () => {
+  if (!videoRef.value || !videoRef.value.readyState) return;
+  
+  try {
+    // 将当前视频帧绘制到canvas
+    const context = canvasRef.value.getContext('2d');
+    canvasRef.value.width = videoRef.value.videoWidth;
+    canvasRef.value.height = videoRef.value.videoHeight;
+    context.drawImage(videoRef.value, 0, 0, canvasRef.value.width, canvasRef.value.height);
+    
+    // 将canvas转换为blob
+    const blob = await new Promise(resolve => {
+      canvasRef.value.toBlob(resolve, 'image/jpeg', 0.8);
+    });
+    
+    // 发送识别请求
+    const response = await recognitionService.checkRecognition(blob);
+    console.log('Recognition response:', response.data);
+    
+    // 处理响应
+    if (response.data && response.data.recognized === false) {
+      // 识别失败，立即返回首页
+      recognitionStatus.value = 'failed';
+      stopRecognition();
+      router.push('/');
+    }
+    // 不处理true的情况，让倒计时结束时处理
+  } catch (err) {
+    console.error('Recognition check error:', err);
+  }
+};
+
+// 开始定时识别
+const startRecognition = () => {
+  if (recognitionTimer) {
+    clearInterval(recognitionTimer);
+  }
+  
+  // 以30fps的速率发送识别请求
+  recognitionTimer = setInterval(checkRecognition, recognitionInterval);
+};
+
+// 停止识别
+const stopRecognition = () => {
+  if (recognitionTimer) {
+    clearInterval(recognitionTimer);
+    recognitionTimer = null;
+  }
+};
+
 onMounted(() => {
-  startCountdown();
+  startCamera().then(() => {
+    startCountdown();
+    startRecognition();
+  });
 });
 
 onUnmounted(() => {
   if (timer) {
     clearInterval(timer);
   }
+  stopRecognition();
+  stopCamera();
 });
 </script>
 
 <template>
   <div class="recognition-container">
-    <div class="header-content">
-      <div class="title">星雲大師給您的一句話</div>
-      <div class="subtitle">A Personal Message from Venerable Master Hsing Yun</div>
-    </div>
-    
-    <div class="countdown-wrapper">
-      <div class="countdown-circle">
-        <span class="countdown-text">{{ countdown }}S</span>
+    <div class="main-content">
+      <div class="upper-content">
+        <div class="title">星雲大師給您的一句話</div>
+        <div class="subtitle">A Personal Message from Venerable Master Hsing Yun</div>
+        
+        <div class="countdown-wrapper">
+          <div class="countdown-circle">
+            <span class="countdown-text">{{ countdown }}s</span>
+          </div>
+        </div>
       </div>
-    </div>
-    
-    <div class="message-area">
-      <p v-if="recognitionSuccess" class="success-message">识别成功</p>
-      <p v-if="recognitionFailed" class="failed-message">请调整您的手势</p>
+      
+      <div class="footer-text" :class="{'failed-text': recognitionStatus === 'failed'}">
+        {{ recognitionStatus === 'checking' ? '请保持合十姿势' : 
+           recognitionStatus === 'success' ? '识别成功' : '识别失败' }}
+      </div>
+      
+      <!-- 摄像头视图处理元素 - 始终存在但隐藏 -->
+      <div style="display: none;">
+        <video 
+          ref="videoRef" 
+          autoplay 
+          playsinline 
+          muted
+        ></video>
+        <canvas ref="canvasRef"></canvas>
+      </div>
+      
+      <!-- 可见的摄像头 - 仅在videoDisplay为true时显示 -->
+      <div v-if="videoDisplay" class="camera-container">
+        <video 
+          ref="videoDisplayEl" 
+          autoplay 
+          playsinline 
+          muted
+          class="camera-feed"
+        ></video>
+      </div>
     </div>
   </div>
 </template>
@@ -94,49 +189,81 @@ onUnmounted(() => {
 .recognition-container {
   min-height: 100vh;
   height: 100%;
-  background-color: #000000;
+  background-color: #000000 !important;
+  background-image: url('@/assets/p2bg.webp');
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
   width: 100vw;
   max-width: 100%;
+  -webkit-tap-highlight-color: transparent;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   overflow: hidden;
-  color: white;
+  color: white !important;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 0 2rem;
+  padding: 0;
+  filter: none;
 }
 
-.header-content {
-  text-align: center;
+.logo-container {
+  display: flex;
+  justify-content: space-between;
   width: 100%;
-  margin-top: 25vh;
+  padding: 20px 30px;
+  box-sizing: border-box;
+}
+
+.left-logo img, .right-logo img {
+  height: 50px;
+}
+
+.main-content {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: flex-start;
+  flex-grow: 1;
+  text-align: center;
+  padding-top: 120px;
+  padding-bottom: 80px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.upper-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 200px;
+  margin-bottom: 80px;
 }
 
 .title {
-  font-size: 2.4rem;
-  font-weight: 600;
+  font-size: 2.6rem;
+  font-weight: 800;
   margin-bottom: 0.1rem;
   letter-spacing: 0.5px;
+  color: #886631;
+  font-family: 'Heiti SC', 'Heiti TC', sans-serif;
 }
 
 .subtitle {
   font-size: 1.7rem;
-  font-weight: 500;
+  font-weight: 600;
   opacity: 0.95;
   letter-spacing: 0.5px;
-  margin-bottom: 1rem;
+  margin-bottom: 3rem;
+  color: #886631;
+  font-family: 'Heiti SC', 'Heiti TC', sans-serif;
 }
 
 .countdown-wrapper {
-  margin-top: 1vh;
+  /* margin-top: 0vh; */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -146,54 +273,65 @@ onUnmounted(() => {
   width: 130px;
   height: 130px;
   border-radius: 50%;
-  background-color: white;
+  border: 2px solid #886631;
+  background-color: transparent;
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
 }
 
 .countdown-text {
   font-size: 2.2rem;
   font-weight: bold;
-  color: black;
+  color: #886631;
+  font-family: 'Heiti SC', 'Heiti TC', sans-serif;
 }
 
-.message-area {
-  height: 3rem;
-  margin-top: 2rem;
-  text-align: center;
-}
-
-.success-message, .failed-message {
+.footer-text {
+  position: absolute;
+  bottom: 60px;
   font-size: 1.5rem;
-  font-weight: 300;
+  color: #886631;
+  font-family: 'Xingkai SC', 'STXingkai', serif;
+  font-weight: 600;
+  transition: color 0.3s ease;
 }
 
-.success-message {
-  color: #ffffff;
+.failed-text {
+  color: #D32F2F;
 }
 
-.failed-message {
-  color: #ffffff;
+/* 摄像头显示容器 - 与MainPage一致 */
+.camera-container {
+  width: 10vw; 
+  height: 10vw;
+  max-width: 90px;
+  max-height: 90px;
+  position: fixed;
+  bottom: 15px;
+  right: 15px;
+  overflow: hidden;
+  border-radius: 50%;
+  opacity: 0.9;
+  border: 3px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  z-index: 999;
+}
+
+.camera-feed {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* Responsive design for different screen sizes */
 @media (min-width: 1200px) {
-  .header-content {
-    margin-top: 27vh;
-  }
-  
   .title {
-    font-size: 3rem;
-    font-weight: 600;
-    margin-bottom: 0.1rem;
+    font-size: 3.5rem;
   }
   
   .subtitle {
     font-size: 2.2rem;
-    font-weight: 500;
-    margin-bottom: 2rem;
   }
   
   .countdown-circle {
@@ -205,24 +343,18 @@ onUnmounted(() => {
     font-size: 2.6rem;
   }
   
-  .countdown-wrapper {
-    margin-top: 1vh;
+  .footer-text {
+    font-size: 2.0rem;
   }
 }
 
 @media (max-width: 768px) {
-  .header-content {
-    margin-top: 23vh;
-  }
-  
   .title {
     font-size: 2.2rem;
-    margin-bottom: 0.1rem;
   }
   
   .subtitle {
     font-size: 1.5rem;
-    margin-bottom: 1.5rem;
   }
   
   .countdown-circle {
@@ -234,28 +366,26 @@ onUnmounted(() => {
     font-size: 2.2rem;
   }
   
-  .countdown-wrapper {
-    margin-top: 1vh;
-  }
-  
-  .message-area {
-    margin-bottom: 8vh;
+  .footer-text {
+    font-size: 1.4rem;
   }
 }
 
 @media (max-width: 480px) {
-  .header-content {
-    margin-top: 20vh;
+  .logo-container {
+    padding: 15px;
+  }
+  
+  .left-logo img, .right-logo img {
+    height: 40px;
   }
   
   .title {
     font-size: 1.8rem;
-    margin-bottom: 0.1rem;
   }
   
   .subtitle {
     font-size: 1.2rem;
-    margin-bottom: 1rem;
   }
   
   .countdown-circle {
@@ -267,12 +397,8 @@ onUnmounted(() => {
     font-size: 2rem;
   }
   
-  .countdown-wrapper {
-    margin-top: 1vh;
-  }
-  
-  .message-area {
-    margin-bottom: 8vh;
+  .footer-text {
+    font-size: 1.2rem;
   }
 }
 </style> 
